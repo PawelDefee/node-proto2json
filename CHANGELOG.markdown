@@ -4,6 +4,13 @@ Revision history for node-proto2json,
 Google Protocol Buffers .proto files to JSON converter
 written in Javascript for [Node.js].
 
+## Version 0.2.0
+
+  * Move some deps to devDependencies
+  * Added support for comments and imports (#1) (Nathan LaFreniere)
+  * Make callbacks optional (#1) (Nathan LaFreniere)
+  * Allow for inline /* style comments (#3) (Nathan LaFreniere)
+
 ## Version 0.1.0
 
   * Console runner: bin/proto2json.js
