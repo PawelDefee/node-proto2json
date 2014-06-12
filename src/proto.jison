@@ -4,8 +4,9 @@
 %lex
 
 rule  ("required"|"optional"|"repeated")
-name  ([A-Za-z_][A-Za-z0-9_]*)
-import_name ([A-Za-z0-9\-_\/\.]+)
+
+name           ([A-Za-z_][A-Za-z_0-9]*)
+name_with_dots ([A-Za-z_][A-Za-z_0-9\-\.]+)
 
 dec    ([1-9][0-9]*)
 hex    (0[xX][A-Fa-f0-9]+)
@@ -62,7 +63,8 @@ parser.protobufCharUnescape = function (chr) {
 %}
 
 %x INITIAL package import
-%x message message_body message_field message_field_options message_field_option message_field_option_value
+%x message message_body message_field_type message_field_after_type
+%x message_field_options message_field_option message_field_option_value
 %x enum enum_body enum_field string_quoted_content option option_value
 
 %%
@@ -71,17 +73,15 @@ parser.protobufCharUnescape = function (chr) {
 <*><<EOF>>          return 'EOF';
 
 // Import state
-<INITIAL>"import"   this.begin('import'); return 'IMPORT';
-<import>";"         this.popState(); return ';';
-<import>{import_name} return 'NAME';
-<import>{quote}      this.begin('string_quoted_content'); parser.protobufCharUnescapeCurrentQuote = this.match; return 'QUOTE';
+<INITIAL>"import"        this.begin('import'); return 'IMPORT';
+<import>{name_with_dots} return 'NAME';
+<import>{quote}          this.begin('string_quoted_content'); parser.protobufCharUnescapeCurrentQuote = this.match; return 'QUOTE';
+<import>";"              this.popState(); return ';';
 
 // Package state
-<INITIAL>"package"  this.begin('package'); return 'PACKAGE';
-<package>";"        this.popState(); return ';';
-
-// Package state lexems
-<package>{name}     return 'NAME';
+<INITIAL>"package"        this.begin('package'); return 'PACKAGE';
+<package>{name_with_dots} return 'NAME';
+<package>";"              this.popState(); return ';';
 
 // Message state
 <INITIAL>"message"  this.begin('message'); return 'MESSAGE';
@@ -93,24 +93,25 @@ parser.protobufCharUnescape = function (chr) {
 <message>"{"                  this.begin('message_body'); return '{';
 <message_body>"}"             this.popState(); this.popState(); return '}';
 
-// Message body lexems | Message field state
+// Message body state lexems
 <message_body>"enum"          this.begin('enum'); return 'ENUM';
 <message_body>"option"        this.begin('option'); return 'OPTION';
 <message_body>"message"       this.begin('message'); return 'MESSAGE';
-<message_body>{rule}          this.begin('message_field'); return 'RULE';
-<message_field>";"            this.popState(); return ';';
+<message_body>{rule}          this.begin('message_field_type'); return 'RULE';
 
 // Message field state lexems
-<message_field>{name}         return 'NAME';
-<message_field>"="            return '=';
-<message_field>{dec}          return 'DEC';
-<message_field>{hex}          return 'HEX';
-<message_field>{oct}          return 'OCT';
-<message_field>{float}        return 'FLOAT';
-<message_field>{bool}         return 'BOOL';
+<message_field_type>{name_with_dots}  this.begin('message_field_after_type'); return 'TYPE';
+<message_field_after_type>{name}      return 'NAME';
+<message_field_after_type>"="         return '=';
+<message_field_after_type>{dec}       return 'DEC';
+<message_field_after_type>{hex}       return 'HEX';
+<message_field_after_type>{oct}       return 'OCT';
+<message_field_after_type>{float}     return 'FLOAT';
+<message_field_after_type>{bool}      return 'BOOL';
+<message_field_after_type>";"         this.popState(); this.popState(); return ';';
 
 // Message field options state lexems
-<message_field>"["            this.begin('message_field_options'); return '[';
+<message_field_after_type>"["            this.begin('message_field_options'); return '[';
 
 
 // Message field options state lexems
@@ -254,7 +255,7 @@ message_body
   ;
 
 message_field
-  : RULE NAME NAME '=' int message_field_options ';' %{
+  : RULE TYPE NAME '=' int message_field_options ';' %{
     $$ = {
       rule: $1,
       type: $2,
