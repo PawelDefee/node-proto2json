@@ -34,7 +34,7 @@ describe('proto.jison', function () {
     var jison_source = fs.readFileSync(__dirname + '/../src/proto.jison', 'utf8');
 
     assert.doesNotThrow(function () {
-      require("jison/lib/jison/bnf").parse(jison_source);
+      require("ebnf-parser").parse(jison_source);
     });
   });
 });

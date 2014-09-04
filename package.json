@@ -21,13 +21,15 @@
     "proto"
   ],
   "dependencies": {
+    "jison": "~0.4.15",
     "argparse": "~0.1.15"
   },
   "devDependencies": {
-    "jison": "~0.3.12",
     "mocha": "~1.21.4",
     "difflet": "~0.2.6",
-    "nodelint": "~0.6.2"
+    "nodelint": "~0.6.2",
+    "ebnf-parser": "~0.1.10",
+    "lex-parser": "0.1.x"
   },
   "author": "Oleg Efimov",
   "license": "MIT"
